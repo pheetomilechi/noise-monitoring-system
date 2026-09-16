@@ -4,6 +4,10 @@ All values can be overridden with environment variables so the same
 code runs unchanged in development, testing, and production.
 """
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if it exists
+load_dotenv()
 
 
 class Config:
