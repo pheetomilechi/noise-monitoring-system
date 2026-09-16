@@ -14,6 +14,7 @@ load_dotenv()
 # Parse database configuration - support Railway's DATABASE_URL format
 def get_db_config():
     database_url = os.environ.get("DATABASE_URL")
+    
     if database_url:
         parsed = urllib.parse.urlparse(database_url)
         return {

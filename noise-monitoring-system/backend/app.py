@@ -40,11 +40,33 @@ def create_app():
     def health():
         try:
             from db import get_connection
+            from config import Config
             conn = get_connection()
             conn.close()
-            return jsonify({"status": "ok", "service": "noise-monitoring-backend", "database": "connected"})
+            return jsonify({
+                "status": "ok", 
+                "service": "noise-monitoring-backend", 
+                "database": "connected",
+                "db_config": {
+                    "host": Config.DB_HOST,
+                    "port": Config.DB_PORT,
+                    "database": Config.DB_NAME,
+                    "user": Config.DB_USER
+                }
+            })
         except Exception as e:
-            return jsonify({"status": "error", "service": "noise-monitoring-backend", "database": "disconnected", "error": str(e)}), 500
+            return jsonify({
+                "status": "error", 
+                "service": "noise-monitoring-backend", 
+                "database": "disconnected", 
+                "error": str(e),
+                "db_config": {
+                    "host": Config.DB_HOST,
+                    "port": Config.DB_PORT,
+                    "database": Config.DB_NAME,
+                    "user": Config.DB_USER
+                }
+            }), 500
 
     # --- Optionally serve the static frontend directly from Flask so the
     # whole system can be run with a single command during grading/demo. ---
