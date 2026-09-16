@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign in · FAI Noise Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="auth-body">
+
+  <div class="auth-wrap">
+    <div class="auth-brand">
+      <div class="waveform" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <h1>FAI Noise Monitor</h1>
+      <p>Real-time acoustic monitoring for the Faculty of Artificial Intelligence, Taraba State University.</p>
+    </div>
+
+    <div class="auth-card">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="login" role="tab">Sign in</button>
+        <button class="tab" data-tab="register" role="tab">Create account</button>
+      </div>
+
+      <form id="login-form" class="panel active">
+        <label>Email
+          <input type="email" id="login-email" required placeholder="you@fai.edu.ng" />
+        </label>
+        <label>Password
+          <input type="password" id="login-password" required placeholder="••••••••" />
+        </label>
+        <button type="submit" class="btn-primary">Sign in</button>
+        <p class="hint">Demo administrator: <code>admin@fai.edu.ng</code> / <code>Admin123!</code> (after running seed_admin.py)</p>
+        <p class="error" id="login-error"></p>
+      </form>
+
+      <form id="register-form" class="panel">
+        <label>Full name
+          <input type="text" id="reg-name" required placeholder="Ada Lovelace" />
+        </label>
+        <label>Email
+          <input type="email" id="reg-email" required placeholder="you@fai.edu.ng" />
+        </label>
+        <label>Role
+          <select id="reg-role">
+            <option value="student">Student</option>
+            <option value="administrator">Faculty administrator</option>
+          </select>
+        </label>
+        <label>Password
+          <input type="password" id="reg-password" required minlength="6" placeholder="At least 6 characters" />
+        </label>
+        <button type="submit" class="btn-primary">Create account</button>
+        <p class="error" id="register-error"></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
