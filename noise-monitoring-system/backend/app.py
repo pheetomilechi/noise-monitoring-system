@@ -42,17 +42,38 @@ def create_app():
 
     # --- Optionally serve the static frontend directly from Flask so the
     # whole system can be run with a single command during grading/demo. ---
-    frontend_dir = os.path.join(os.path.dirname(__file__), "..", "frontend")
+    # Try multiple possible frontend locations for flexibility
+    possible_frontend_dirs = [
+        os.path.join(os.path.dirname(__file__), "..", "frontend"),  # Local development
+        os.path.join(os.path.dirname(__file__), "..", "..", "frontend"),  # Railway deployment
+        "/app/frontend",  # Some container setups
+    ]
+    
+    frontend_dir = None
+    for dir_path in possible_frontend_dirs:
+        if os.path.exists(dir_path) and os.path.exists(os.path.join(dir_path, "index.html")):
+            frontend_dir = dir_path
+            break
+    
+    if frontend_dir:
+        @app.get("/")
+        def serve_index():
+            return send_from_directory(frontend_dir, "index.html")
 
-    @app.get("/")
-    def serve_index():
-        return send_from_directory(frontend_dir, "index.html")
-
-    @app.get("/<path:filename>")
-    def serve_static(filename):
-        if os.path.exists(os.path.join(frontend_dir, filename)):
-            return send_from_directory(frontend_dir, filename)
-        return jsonify({"error": "Not found"}), 404
+        @app.get("/<path:filename>")
+        def serve_static(filename):
+            if os.path.exists(os.path.join(frontend_dir, filename)):
+                return send_from_directory(frontend_dir, filename)
+            return jsonify({"error": "Not found"}), 404
+    else:
+        # If frontend not found, provide API info
+        @app.get("/")
+        def serve_root():
+            return jsonify({
+                "message": "Noise Monitoring System API",
+                "api_health": "/api/health",
+                "frontend_not_found": "Frontend files not found - serving API only"
+            })
 
     return app
 
