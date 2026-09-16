@@ -38,7 +38,13 @@ def create_app():
 
     @app.get("/api/health")
     def health():
-        return jsonify({"status": "ok", "service": "noise-monitoring-backend"})
+        try:
+            from db import get_connection
+            conn = get_connection()
+            conn.close()
+            return jsonify({"status": "ok", "service": "noise-monitoring-backend", "database": "connected"})
+        except Exception as e:
+            return jsonify({"status": "error", "service": "noise-monitoring-backend", "database": "disconnected", "error": str(e)}), 500
 
     # --- Optionally serve the static frontend directly from Flask so the
     # whole system can be run with a single command during grading/demo. ---

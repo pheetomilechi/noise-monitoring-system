@@ -27,21 +27,24 @@ def register():
 
     password_hash = generate_password_hash(password)
 
-    with db_cursor(commit=True) as (conn, cur):
-        cur.execute("SELECT id FROM users WHERE email=%s", (email,))
-        if cur.fetchone():
-            return jsonify({"error": "An account with this email already exists"}), 409
+    try:
+        with db_cursor(commit=True) as (conn, cur):
+            cur.execute("SELECT id FROM users WHERE email=%s", (email,))
+            if cur.fetchone():
+                return jsonify({"error": "An account with this email already exists"}), 409
 
-        cur.execute(
-            """INSERT INTO users (full_name, email, password_hash, role, department)
-               VALUES (%s, %s, %s, %s, %s)""",
-            (full_name, email, password_hash, role, department),
-        )
-        user_id = cur.lastrowid
+            cur.execute(
+                """INSERT INTO users (full_name, email, password_hash, role, department)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                (full_name, email, password_hash, role, department),
+            )
+            user_id = cur.lastrowid
 
-    user = {"id": user_id, "email": email, "role": role, "full_name": full_name}
-    token = issue_token(user)
-    return jsonify({"token": token, "user": user}), 201
+        user = {"id": user_id, "email": email, "role": role, "full_name": full_name}
+        token = issue_token(user)
+        return jsonify({"token": token, "user": user}), 201
+    except Exception as e:
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 
 @bp.post("/login")
@@ -53,27 +56,30 @@ def login():
     if not email or not password:
         return jsonify({"error": "email and password are required"}), 400
 
-    with db_cursor() as (conn, cur):
-        cur.execute(
-            "SELECT id, full_name, email, password_hash, role, department FROM users WHERE email=%s",
-            (email,),
-        )
-        user = cur.fetchone()
+    try:
+        with db_cursor() as (conn, cur):
+            cur.execute(
+                "SELECT id, full_name, email, password_hash, role, department FROM users WHERE email=%s",
+                (email,),
+            )
+            user = cur.fetchone()
 
-    if not user or not check_password_hash(user["password_hash"], password):
-        return jsonify({"error": "Invalid email or password"}), 401
+        if not user or not check_password_hash(user["password_hash"], password):
+            return jsonify({"error": "Invalid email or password"}), 401
 
-    token = issue_token(user)
-    return jsonify({
-        "token": token,
-        "user": {
-            "id": user["id"],
-            "full_name": user["full_name"],
-            "email": user["email"],
-            "role": user["role"],
-            "department": user["department"],
-        },
-    })
+        token = issue_token(user)
+        return jsonify({
+            "token": token,
+            "user": {
+                "id": user["id"],
+                "full_name": user["full_name"],
+                "email": user["email"],
+                "role": user["role"],
+                "department": user["department"],
+            },
+        })
+    except Exception as e:
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
 
 
 @bp.get("/me")
