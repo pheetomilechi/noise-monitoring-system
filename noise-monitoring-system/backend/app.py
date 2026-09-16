@@ -44,11 +44,10 @@ def create_app():
     # whole system can be run with a single command during grading/demo. ---
     # Try multiple possible frontend locations for flexibility
     possible_frontend_dirs = [
-        os.path.join(os.path.dirname(__file__), "..", "frontend"),  # Local development
-        os.path.join(os.path.dirname(__file__), "..", "..", "frontend"),  # Railway deployment
-        "/app/frontend",  # Some container setups
-        "/workspace/frontend",  # Railway workspace
+        os.path.join(os.path.dirname(__file__), "..", "frontend"),  # Standard structure
+        "/app/frontend",  # Docker container
         "frontend",  # Relative path
+        "/workspace/frontend",  # Railway workspace
     ]
     
     frontend_dir = None
@@ -79,7 +78,9 @@ def create_app():
                     "current_dir": os.getcwd(),
                     "script_dir": os.path.dirname(__file__),
                     "searched_paths": possible_frontend_dirs,
-                    "path_exists": [os.path.exists(p) for p in possible_frontend_dirs]
+                    "path_exists": [os.path.exists(p) for p in possible_frontend_dirs],
+                    "root_contents": os.listdir("/") if os.path.exists("/") else [],
+                    "app_contents": os.listdir("/app") if os.path.exists("/app") else []
                 }
             })
 

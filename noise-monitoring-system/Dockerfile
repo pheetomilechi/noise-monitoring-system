@@ -2,9 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Copy both backend and frontend directories
-COPY backend/ ./backend/
-COPY frontend/ ./frontend/
+# Copy entire project structure
+COPY . .
 
 # Install backend dependencies
 RUN pip install --no-cache-dir -r backend/requirements.txt
