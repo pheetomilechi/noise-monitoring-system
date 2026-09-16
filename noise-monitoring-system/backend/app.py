@@ -47,6 +47,8 @@ def create_app():
         os.path.join(os.path.dirname(__file__), "..", "frontend"),  # Local development
         os.path.join(os.path.dirname(__file__), "..", "..", "frontend"),  # Railway deployment
         "/app/frontend",  # Some container setups
+        "/workspace/frontend",  # Railway workspace
+        "frontend",  # Relative path
     ]
     
     frontend_dir = None
@@ -66,13 +68,19 @@ def create_app():
                 return send_from_directory(frontend_dir, filename)
             return jsonify({"error": "Not found"}), 404
     else:
-        # If frontend not found, provide API info
+        # If frontend not found, provide API info and debug info
         @app.get("/")
         def serve_root():
             return jsonify({
                 "message": "Noise Monitoring System API",
                 "api_health": "/api/health",
-                "frontend_not_found": "Frontend files not found - serving API only"
+                "frontend_not_found": "Frontend files not found - serving API only",
+                "debug": {
+                    "current_dir": os.getcwd(),
+                    "script_dir": os.path.dirname(__file__),
+                    "searched_paths": possible_frontend_dirs,
+                    "path_exists": [os.path.exists(p) for p in possible_frontend_dirs]
+                }
             })
 
     return app
