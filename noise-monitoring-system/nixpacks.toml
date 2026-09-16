@@ -1,0 +1,8 @@
+[phases.build]
+cmds = ["pip install -r backend/requirements.txt"]
+
+[phases.start]
+cmd = "gunicorn -w 4 -b 0.0.0.0:$PORT --timeout 120 backend.app:app"
+
+[start]
+cmd = "gunicorn -w 4 -b 0.0.0.0:$PORT --timeout 120 backend.app:app"
