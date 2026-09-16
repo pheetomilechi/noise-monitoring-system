@@ -83,6 +83,26 @@ watch alerts fire live on the dashboard.
    pending alerts (with an Acknowledge action) and threshold
    configuration.
 
+## Railway Deployment
+
+The app is configured for Railway deployment with the following files:
+
+- `Procfile`: Runs the app with gunicorn (production WSGI server)
+- `railway.json`: Railway configuration with health checks
+- `runtime.txt`: Specifies Python 3.11
+
+To deploy to Railway:
+
+1. Create a MySQL database in Railway
+2. Set the following environment variables in Railway:
+   - `DATABASE_URL`: Automatically set by Railway (mysql://user:password@host:port/db)
+   - `NMS_JWT_SECRET`: Generate a secure random secret (e.g., `python -c "import secrets;print(secrets.token_hex(32))"`)
+3. Deploy the project to Railway
+4. Run the database schema by connecting to Railway's MySQL and executing `backend/schema.sql`
+5. Create an admin account by running `python backend/seed_admin.py` locally with Railway's DATABASE_URL, or via Railway console
+
+The app will automatically parse Railway's `DATABASE_URL` format for database connectivity.
+
 ## Project structure
 
 ```
