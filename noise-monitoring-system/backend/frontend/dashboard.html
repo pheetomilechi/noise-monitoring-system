@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard · FAI Noise Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-mini">
+    <div class="waveform sm" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+    <span>FAI Noise Monitor</span>
+  </div>
+  <div class="topbar-right">
+    <span id="user-name" class="user-name"></span>
+    <span id="user-role" class="pill"></span>
+    <button id="logout-btn" class="btn-ghost">Sign out</button>
+  </div>
+</header>
+
+<main class="dashboard">
+
+  <section class="summary-row" id="summary-row">
+    <div class="summary-card">
+      <span class="summary-label">Sensors online</span>
+      <span class="summary-value" id="sum-sensors">–</span>
+    </div>
+    <div class="summary-card">
+      <span class="summary-label">Today's average</span>
+      <span class="summary-value" id="sum-avg">–</span>
+    </div>
+    <div class="summary-card">
+      <span class="summary-label">Today's peak</span>
+      <span class="summary-value" id="sum-peak">–</span>
+    </div>
+    <div class="summary-card alert-card">
+      <span class="summary-label">Pending alerts</span>
+      <span class="summary-value" id="sum-pending">–</span>
+    </div>
+  </section>
+
+  <section class="content-grid">
+    <div class="sensor-column">
+      <div class="section-head">
+        <h2>Live noise levels</h2>
+        <span class="live-indicator"><span class="dot"></span>updating every 5s</span>
+      </div>
+      <div id="sensor-grid" class="sensor-grid"></div>
+
+      <div class="section-head" style="margin-top:2rem;">
+        <h2>Historical trend</h2>
+        <div class="range-select">
+          <select id="chart-sensor"></select>
+          <select id="chart-range">
+            <option value="hour">Last hour</option>
+            <option value="day" selected>Last 24 hours</option>
+            <option value="week">Last 7 days</option>
+          </select>
+        </div>
+      </div>
+      <div class="chart-card">
+        <canvas id="trend-chart" height="110"></canvas>
+      </div>
+    </div>
+
+    <div class="side-column">
+      <div class="section-head">
+        <h2>Active alerts</h2>
+      </div>
+      <div id="alerts-list" class="alerts-list"></div>
+
+      <div id="admin-panel" class="admin-panel hidden">
+        <div class="section-head">
+          <h2>Thresholds</h2>
+        </div>
+        <div id="thresholds-list" class="thresholds-list"></div>
+        <form id="threshold-form" class="threshold-form">
+          <select id="th-sensor" required></select>
+          <input type="number" id="th-max" placeholder="Max dB" step="0.1" required />
+          <input type="time" id="th-start" value="08:00" />
+          <input type="time" id="th-end" value="18:00" />
+          <button type="submit" class="btn-primary sm">Add threshold</button>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

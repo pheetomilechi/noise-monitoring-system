@@ -44,6 +44,7 @@ def create_app():
     # whole system can be run with a single command during grading/demo. ---
     # Try multiple possible frontend locations for flexibility
     possible_frontend_dirs = [
+        os.path.join(os.path.dirname(__file__), "frontend"),  # Inside backend directory (Railway)
         os.path.join(os.path.dirname(__file__), "..", "frontend"),  # Standard structure
         "/app/frontend",  # Docker container
         "frontend",  # Relative path
