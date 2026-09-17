@@ -68,6 +68,40 @@ def create_app():
                 }
             }), 500
 
+    @app.post("/api/setup/database")
+    def setup_database():
+        """One-time endpoint to run schema.sql on the database."""
+        try:
+            from db import get_connection
+            import os
+            
+            schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
+            with open(schema_path, 'r') as f:
+                sql_text = f.read()
+            
+            conn = get_connection()
+            try:
+                with conn.cursor() as cur:
+                    statements = sql_text.split(';')
+                    results = []
+                    for i, statement in enumerate(statements):
+                        statement = statement.strip()
+                        if statement and not statement.startswith('--'):
+                            try:
+                                cur.execute(statement)
+                                results.append(f"Statement {i+1}: Success")
+                            except Exception as e:
+                                if "already exists" in str(e):
+                                    results.append(f"Statement {i+1}: Skipped (already exists)")
+                                else:
+                                    results.append(f"Statement {i+1}: Error - {str(e)}")
+                    conn.commit()
+                return jsonify({"status": "success", "results": results})
+            finally:
+                conn.close()
+        except Exception as e:
+            return jsonify({"status": "error", "error": str(e)}), 500
+
     # --- Optionally serve the static frontend directly from Flask so the
     # whole system can be run with a single command during grading/demo. ---
     # Try multiple possible frontend locations for flexibility

@@ -2,11 +2,8 @@
 -- Real-Time Noise Monitoring System - MySQL Schema
 -- Faculty of Artificial Intelligence, Taraba State University
 -- ============================================================
-
-CREATE DATABASE IF NOT EXISTS noise_monitoring
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-USE noise_monitoring;
+-- Note: For Railway deployment, the database is already created
+-- This schema creates tables in the existing database
 
 -- ---------------------------------------------------------
 -- Users: students, faculty administrators, system admins
