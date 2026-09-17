@@ -82,44 +82,42 @@ def create_app():
             conn = get_connection()
             try:
                 with conn.cursor() as cur:
-                    # First, execute all CREATE TABLE statements
-                    statements = sql_text.split(';')
-                    create_statements = []
-                    insert_statements = []
+                    # Process statements in order, but commit after each CREATE
+                    statements = []
+                    current_statement = []
                     
-                    for statement in statements:
-                        statement = statement.strip()
-                        if statement and not statement.startswith('--'):
-                            if statement.upper().startswith('CREATE'):
-                                create_statements.append(statement)
-                            elif statement.upper().startswith('INSERT'):
-                                insert_statements.append(statement)
+                    for line in sql_text.split('\n'):
+                        line = line.strip()
+                        if line and not line.startswith('--'):
+                            current_statement.append(line)
+                            if line.endswith(';'):
+                                full_statement = ' '.join(current_statement).strip()
+                                if full_statement:
+                                    statements.append(full_statement)
+                                current_statement = []
                     
                     results = []
                     
-                    # Execute CREATE statements first
-                    for i, statement in enumerate(create_statements):
+                    for i, statement in enumerate(statements):
+                        statement = statement.rstrip(';').strip()
+                        if not statement:
+                            continue
+                            
                         try:
-                            cur.execute(statement)
-                            results.append(f"CREATE {i+1}: Success")
+                            cur.execute(statement + ';')
+                            conn.commit()
+                            statement_type = "CREATE" if statement.upper().startswith('CREATE') else "INSERT"
+                            results.append(f"{statement_type} {i+1}: Success")
                         except Exception as e:
-                            if "already exists" in str(e):
-                                results.append(f"CREATE {i+1}: Skipped (already exists)")
+                            error_msg = str(e)
+                            if "already exists" in error_msg:
+                                results.append(f"Statement {i+1}: Skipped (already exists)")
+                            elif "Duplicate entry" in error_msg:
+                                results.append(f"Statement {i+1}: Skipped (duplicate)")
                             else:
-                                results.append(f"CREATE {i+1}: Error - {str(e)}")
+                                results.append(f"Statement {i+1}: Error - {error_msg}")
+                                # Don't fail entire process on individual statement errors
                     
-                    # Then execute INSERT statements
-                    for i, statement in enumerate(insert_statements):
-                        try:
-                            cur.execute(statement)
-                            results.append(f"INSERT {i+1}: Success")
-                        except Exception as e:
-                            if "Duplicate entry" in str(e):
-                                results.append(f"INSERT {i+1}: Skipped (duplicate)")
-                            else:
-                                results.append(f"INSERT {i+1}: Error - {str(e)}")
-                    
-                    conn.commit()
                 return jsonify({"status": "success", "results": results})
             finally:
                 conn.close()
