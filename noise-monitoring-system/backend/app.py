@@ -68,7 +68,7 @@ def create_app():
                 }
             }), 500
 
-    @app.post("/api/setup/database")
+    @app.route("/api/setup/database", methods=["GET", "POST"])
     def setup_database():
         """One-time endpoint to run schema.sql on the database."""
         try:
