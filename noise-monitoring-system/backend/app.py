@@ -200,6 +200,52 @@ def create_app():
         except Exception as e:
             return jsonify({"status": "error", "error": str(e)}), 500
 
+    @app.route("/api/setup/admin", methods=["GET", "POST"])
+    def setup_admin():
+        """Create an admin user for initial setup."""
+        try:
+            from db import get_connection
+            from werkzeug.security import generate_password_hash
+            from flask import request
+            
+            # Get parameters from query string or body
+            if request.method == "POST":
+                data = request.get_json(silent=True) or {}
+                email = data.get("email", "admin@fai.edu.ng")
+                full_name = data.get("full_name", "System Administrator")
+                password = data.get("password", "Admin123!")
+            else:
+                email = request.args.get("email", "admin@fai.edu.ng")
+                full_name = request.args.get("full_name", "System Administrator")
+                password = request.args.get("password", "Admin123!")
+            
+            password_hash = generate_password_hash(password)
+            
+            conn = get_connection()
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """INSERT INTO users (full_name, email, password_hash, role, department)
+                           VALUES (%s, %s, %s, 'administrator', 'Faculty of AI')
+                           ON DUPLICATE KEY UPDATE 
+                           full_name = VALUES(full_name),
+                           password_hash = VALUES(password_hash),
+                           role = VALUES(role)""",
+                        (full_name, email, password_hash)
+                    )
+                    conn.commit()
+                
+                return jsonify({
+                    "status": "success",
+                    "message": "Admin user created successfully",
+                    "email": email,
+                    "full_name": full_name
+                })
+            finally:
+                conn.close()
+        except Exception as e:
+            return jsonify({"status": "error", "error": str(e)}), 500
+
     # --- Optionally serve the static frontend directly from Flask so the
     # whole system can be run with a single command during grading/demo. ---
     # Try multiple possible frontend locations for flexibility
