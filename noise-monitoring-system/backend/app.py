@@ -72,15 +72,131 @@ def create_app():
     def setup_database():
         """One-time endpoint to run schema.sql on the database."""
         try:
-            from db import init_db_from_schema
+            from db import get_connection
             import os
             
-            schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
+            # Define table creation statements in order
+            table_statements = [
+                """CREATE TABLE IF NOT EXISTS users (
+                  id              INT AUTO_INCREMENT PRIMARY KEY,
+                  full_name       VARCHAR(150) NOT NULL,
+                  email           VARCHAR(150) NOT NULL UNIQUE,
+                  password_hash   VARCHAR(255) NOT NULL,
+                  role            ENUM('student', 'administrator', 'system_admin') NOT NULL DEFAULT 'student',
+                  department      VARCHAR(150) DEFAULT NULL,
+                  created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB""",
+                
+                """CREATE TABLE IF NOT EXISTS sensor_nodes (
+                  id                  INT AUTO_INCREMENT PRIMARY KEY,
+                  sensor_code         VARCHAR(50) NOT NULL UNIQUE,
+                  api_key             VARCHAR(64) NOT NULL UNIQUE,
+                  location            VARCHAR(150) NOT NULL,
+                  room_identifier     VARCHAR(100) NOT NULL,
+                  calibration_offset  DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+                  status              ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
+                  last_seen           TIMESTAMP NULL DEFAULT NULL,
+                  created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB""",
+                
+                """CREATE TABLE IF NOT EXISTS noise_readings (
+                  id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+                  sensor_id       INT NOT NULL,
+                  decibel_value   DECIMAL(5,2) NOT NULL,
+                  recorded_at     DATETIME NOT NULL,
+                  violation_flag  BOOLEAN NOT NULL DEFAULT FALSE,
+                  created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  CONSTRAINT fk_reading_sensor FOREIGN KEY (sensor_id)
+                    REFERENCES sensor_nodes(id) ON DELETE CASCADE,
+                  INDEX idx_sensor_time (sensor_id, recorded_at)
+                ) ENGINE=InnoDB""",
+                
+                """CREATE TABLE IF NOT EXISTS alert_thresholds (
+                  id                       INT AUTO_INCREMENT PRIMARY KEY,
+                  sensor_id                INT NOT NULL,
+                  label                    VARCHAR(100) DEFAULT 'Default',
+                  max_decibel              DECIMAL(5,2) NOT NULL,
+                  hysteresis_db            DECIMAL(4,2) NOT NULL DEFAULT 3.00,
+                  period_start             TIME NOT NULL DEFAULT '00:00:00',
+                  period_end               TIME NOT NULL DEFAULT '23:59:59',
+                  notification_recipients  JSON DEFAULT NULL,
+                  is_active                BOOLEAN NOT NULL DEFAULT TRUE,
+                  created_at               TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  CONSTRAINT fk_threshold_sensor FOREIGN KEY (sensor_id)
+                    REFERENCES sensor_nodes(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB""",
+                
+                """CREATE TABLE IF NOT EXISTS alert_logs (
+                  id              INT AUTO_INCREMENT PRIMARY KEY,
+                  threshold_id    INT NOT NULL,
+                  sensor_id       INT NOT NULL,
+                  reading_id      BIGINT DEFAULT NULL,
+                  decibel_value   DECIMAL(5,2) NOT NULL,
+                  user_id         INT DEFAULT NULL,
+                  triggered_at    DATETIME NOT NULL,
+                  acknowledged_at DATETIME DEFAULT NULL,
+                  status          ENUM('pending', 'acknowledged') NOT NULL DEFAULT 'pending',
+                  created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  CONSTRAINT fk_alert_threshold FOREIGN KEY (threshold_id)
+                    REFERENCES alert_thresholds(id) ON DELETE CASCADE,
+                  CONSTRAINT fk_alert_sensor FOREIGN KEY (sensor_id)
+                    REFERENCES sensor_nodes(id) ON DELETE CASCADE,
+                  CONSTRAINT fk_alert_user FOREIGN KEY (user_id)
+                    REFERENCES users(id) ON DELETE SET NULL
+                ) ENGINE=InnoDB"""
+            ]
             
-            # Use the existing schema execution function
-            init_db_from_schema(schema_path)
+            # Define seed data statements
+            seed_statements = [
+                """INSERT IGNORE INTO sensor_nodes (sensor_code, api_key, location, room_identifier, calibration_offset, status)
+                VALUES
+                  ('SN-LR-01', 'demo-key-lr01-change-me', 'Lecture Room 1, FAI Building', 'LR-01', 2.5, 'active'),
+                  ('SN-LAB-02', 'demo-key-lab02-change-me', 'AI Computer Lab, FAI Building', 'LAB-02', 1.0, 'active'),
+                  ('SN-LIB-03', 'demo-key-lib03-change-me', 'Silent Study Area, FAI Library', 'LIB-03', 0.5, 'active')""",
+                
+                """INSERT IGNORE INTO alert_thresholds (sensor_id, label, max_decibel, hysteresis_db, period_start, period_end)
+                SELECT id, 'Lecture hours limit', 65.00, 3.00, '08:00:00', '18:00:00' FROM sensor_nodes WHERE sensor_code = 'SN-LR-01'""",
+                
+                """INSERT IGNORE INTO alert_thresholds (sensor_id, label, max_decibel, hysteresis_db, period_start, period_end)
+                SELECT id, 'Lab session limit', 60.00, 3.00, '08:00:00', '20:00:00' FROM sensor_nodes WHERE sensor_code = 'SN-LAB-02'""",
+                
+                """INSERT IGNORE INTO alert_thresholds (sensor_id, label, max_decibel, hysteresis_db, period_start, period_end)
+                SELECT id, 'Silent area limit', 45.00, 2.00, '00:00:00', '23:59:59' FROM sensor_nodes WHERE sensor_code = 'SN-LIB-03'"""
+            ]
             
-            return jsonify({"status": "success", "message": "Schema executed successfully"})
+            conn = get_connection()
+            try:
+                with conn.cursor() as cur:
+                    results = []
+                    
+                    # Create tables first
+                    for i, statement in enumerate(table_statements):
+                        try:
+                            cur.execute(statement)
+                            conn.commit()
+                            results.append(f"Table {i+1}: Success")
+                        except Exception as e:
+                            if "already exists" in str(e):
+                                results.append(f"Table {i+1}: Skipped (already exists)")
+                            else:
+                                results.append(f"Table {i+1}: Error - {str(e)}")
+                    
+                    # Then insert seed data
+                    for i, statement in enumerate(seed_statements):
+                        try:
+                            cur.execute(statement)
+                            conn.commit()
+                            results.append(f"Seed {i+1}: Success")
+                        except Exception as e:
+                            if "Duplicate entry" in str(e):
+                                results.append(f"Seed {i+1}: Skipped (duplicate)")
+                            else:
+                                results.append(f"Seed {i+1}: Error - {str(e)}")
+                
+                return jsonify({"status": "success", "results": results})
+            finally:
+                conn.close()
         except Exception as e:
             return jsonify({"status": "error", "error": str(e)}), 500
 
