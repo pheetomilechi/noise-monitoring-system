@@ -2,8 +2,9 @@
 -- Real-Time Noise Monitoring System - MySQL Schema
 -- Faculty of Artificial Intelligence, Taraba State University
 -- ============================================================
--- Note: For Railway deployment, the database is already created
--- This schema creates tables in the existing database
+
+-- Skip CREATE DATABASE and USE statements for Railway
+-- Database is specified in DATABASE_URL and connection parameters
 
 -- ---------------------------------------------------------
 -- Users: students, faculty administrators, system admins

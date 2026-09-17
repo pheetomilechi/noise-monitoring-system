@@ -49,7 +49,6 @@ def db_cursor(commit=False):
 def init_db_from_schema(schema_path="schema.sql"):
     """Run schema.sql against the configured MySQL server. Useful for
     first-time setup: `python -c "from db import init_db_from_schema; init_db_from_schema()"`
-    Requires a MySQL user with CREATE DATABASE privileges.
     """
     with open(schema_path, "r") as f:
         sql_text = f.read()
@@ -59,6 +58,7 @@ def init_db_from_schema(schema_path="schema.sql"):
         port=Config.DB_PORT,
         user=Config.DB_USER,
         password=Config.DB_PASSWORD,
+        database=Config.DB_NAME,
         cursorclass=pymysql.cursors.DictCursor,
         autocommit=True,
     )
@@ -66,7 +66,12 @@ def init_db_from_schema(schema_path="schema.sql"):
         with conn.cursor() as cur:
             for statement in sql_text.split(";"):
                 statement = statement.strip()
-                if statement:
-                    cur.execute(statement)
+                if statement and not statement.startswith("--"):
+                    try:
+                        cur.execute(statement)
+                    except Exception as e:
+                        # Skip errors for existing tables/data
+                        if "already exists" not in str(e) and "Duplicate entry" not in str(e):
+                            raise
     finally:
         conn.close()

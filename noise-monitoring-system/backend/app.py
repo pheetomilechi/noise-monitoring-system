@@ -72,55 +72,15 @@ def create_app():
     def setup_database():
         """One-time endpoint to run schema.sql on the database."""
         try:
-            from db import get_connection
+            from db import init_db_from_schema
             import os
             
             schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
-            with open(schema_path, 'r') as f:
-                sql_text = f.read()
             
-            conn = get_connection()
-            try:
-                with conn.cursor() as cur:
-                    # Process statements in order, but commit after each CREATE
-                    statements = []
-                    current_statement = []
-                    
-                    for line in sql_text.split('\n'):
-                        line = line.strip()
-                        if line and not line.startswith('--'):
-                            current_statement.append(line)
-                            if line.endswith(';'):
-                                full_statement = ' '.join(current_statement).strip()
-                                if full_statement:
-                                    statements.append(full_statement)
-                                current_statement = []
-                    
-                    results = []
-                    
-                    for i, statement in enumerate(statements):
-                        statement = statement.rstrip(';').strip()
-                        if not statement:
-                            continue
-                            
-                        try:
-                            cur.execute(statement + ';')
-                            conn.commit()
-                            statement_type = "CREATE" if statement.upper().startswith('CREATE') else "INSERT"
-                            results.append(f"{statement_type} {i+1}: Success")
-                        except Exception as e:
-                            error_msg = str(e)
-                            if "already exists" in error_msg:
-                                results.append(f"Statement {i+1}: Skipped (already exists)")
-                            elif "Duplicate entry" in error_msg:
-                                results.append(f"Statement {i+1}: Skipped (duplicate)")
-                            else:
-                                results.append(f"Statement {i+1}: Error - {error_msg}")
-                                # Don't fail entire process on individual statement errors
-                    
-                return jsonify({"status": "success", "results": results})
-            finally:
-                conn.close()
+            # Use the existing schema execution function
+            init_db_from_schema(schema_path)
+            
+            return jsonify({"status": "success", "message": "Schema executed successfully"})
         except Exception as e:
             return jsonify({"status": "error", "error": str(e)}), 500
 
